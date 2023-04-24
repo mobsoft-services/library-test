@@ -112,12 +112,6 @@ class MobSoftUpdate {
                             activity.startActivity(i);
                             activity.finish();
                         } else {
-                            Intent i = new Intent();
-                            i.setClass(activity, UpdateActivity.class);
-                            i.putExtra("size", jsonObject.getString("size"));
-                            i.putExtra("url", jsonObject.getString("url"));
-                            activity.startActivity(i);
-                            activity.finish();
                             String message = jsonObject.getString("message");
                             handler.post(() -> onUpdate.onFailure(message));
                         }
