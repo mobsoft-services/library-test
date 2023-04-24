@@ -1,13 +1,11 @@
 package com.mobsoft;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.mobsoft.library.FragmentDialogUpdate;
-import com.mobsoft.library.MobSoftUpdate;
+import com.mobsoft.library.MobSoftSdk;
 
 public class MainActivity extends AppCompatActivity  {
 
@@ -16,20 +14,24 @@ public class MainActivity extends AppCompatActivity  {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        MobSoftUpdate update = new MobSoftUpdate();
+        MobSoftSdk mobSoftSdk = new MobSoftSdk();
+        mobSoftSdk.setAppId("b712d6fd-b936-417e-846e-7f095cee3d6d");
+        mobSoftSdk.setActivity(MainActivity.this);
+        mobSoftSdk.setFragmentManager(getSupportFragmentManager());
 
-        update.appIsInitialized(this, new MobSoftUpdate.InitializedProvider<Boolean>() {
+        mobSoftSdk.onInitialized(new MobSoftSdk.InitializedSdk() {
             @Override
-            public void onInitialized(Boolean initialized, Exception error) {
-                if (initialized) {
-                    update.verifyUpdate(MainActivity.this, getSupportFragmentManager());
-                } else {
-                    Log.d("Error", String.valueOf(error));
-                    Toast.makeText(MainActivity.this, "Error initializing provider: ", Toast.LENGTH_SHORT).show();
-                }
+            public void onSuccess(String message) {
+
+            }
+
+            @Override
+            public void onFailure(String error) {
+                // Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
             }
         });
 
     }
 
 }
+

@@ -1,102 +1,93 @@
 package com.mobsoft.library;
 
-import android.app.Dialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.drawable.Drawable;
-import com.mobsoft.library.BuildConfig;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
-import androidx.fragment.app.DialogFragment;
+
+import com.airbnb.lottie.LottieAnimationView;
 
 import java.io.File;
-import java.util.Objects;
 
-public class FragmentDialogUpdate extends DialogFragment {
+public class UpdateActivity extends AppCompatActivity {
 
     private ProgressBar progressBar;
     private TextView textProgress;
     private LinearLayout linearDown;
     private TextView textBtnDown;
     private LinearLayout linearButtonUpdate;
-
     private Boolean isDownload = false;
-    private boolean shouldAnimate = true;
-
     private File apkFile;
+    private LottieAnimationView animationView;
+    private ImageView icon;
+    private TextView textTitleApp;
+    private TextView textSizeApp;
+    private TextView textDescription;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setStyle(DialogFragment.STYLE_NORMAL, R.style.AppTheme_FullScreenDialog);
-    }
+        setContentView(R.layout.activity_update);
 
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        super.onCreateView(inflater, container, savedInstanceState);
-        View view = inflater.inflate(R.layout.dialog_fragment, container, false);
+        linearDown = findViewById(R.id.linear_progress_download);
+        textProgress = findViewById(R.id.textDownloadProgress);
+        progressBar = findViewById(R.id.progressbar1);
+        linearButtonUpdate = findViewById(R.id.linear_button_update);
+        textBtnDown = findViewById(R.id.textBtnDown);
+        icon = findViewById(R.id.icon);
+        textTitleApp = findViewById(R.id.text_title_app);
+        textSizeApp = findViewById(R.id.text_size_app);
+        textDescription = findViewById(R.id.textDescription);
 
-        if (shouldAnimate) {
-            Animation animation = AnimationUtils.loadAnimation(getContext(), R.anim.slide_up);
-            view.startAnimation(animation);
-        }
 
-        linearDown = view.findViewById(R.id.linear_progress_download);
-        textProgress = view.findViewById(R.id.textDownloadProgress);
-        progressBar = view.findViewById(R.id.progressbar1);
-        linearButtonUpdate = view.findViewById(R.id.linear_button_update);
-        textBtnDown = view.findViewById(R.id.textBtnDown);
-        ImageView icon = view.findViewById(R.id.icon);
-        TextView textTitleApp = view.findViewById(R.id.text_title_app);
-        TextView textSizeApp = view.findViewById(R.id.text_size_app);
+        animationView = findViewById(R.id.animationView);
+        animationView.setAnimation(R.raw.renewable_energy);
+        animationView.playAnimation();
 
-        Bundle args = getArguments();
+        Intent args = getIntent();
 
-        textBtnDown.setText("ATUALIZAR");
         if (args != null) {
-            System.out.println(args.getString("url"));
-            textSizeApp.setText("Tamanho: ".concat(args.getString(("size"))));
+            textSizeApp.setText(getString(R.string.text_length).concat(" " + args.getStringExtra("size")));
         }
 
         textBtnDown.setOnClickListener(view1 -> {
             if (isDownload) {
                 installApk(apkFile);
             } else if (args != null) {
-                linearButtonUpdate.setVisibility(View.GONE);
+                linearButtonUpdate.setVisibility(View.INVISIBLE);
                 linearDown.setVisibility(View.VISIBLE);
-                downloadApp(args.getString("url"));
+                animationView.setVisibility(View.VISIBLE);
+                textTitleApp.setVisibility(View.GONE);
+                textSizeApp.setVisibility(View.GONE);
+                icon.setVisibility(View.GONE);
+                textDescription.setVisibility(View.GONE);
+                downloadApp(args.getStringExtra("url"));
             }
         });
 
-        PackageManager pm = requireContext().getPackageManager();
+        PackageManager pm = getPackageManager();
         ApplicationInfo appInfo = null;
 
         try {
+            appInfo = pm.getApplicationInfo(getPackageName(), 0);
 
-            appInfo = pm.getApplicationInfo("com.mobsoft", 0);
-
-            ApplicationInfo applicationInfo = pm.getApplicationInfo(requireActivity().getPackageName(), 0);
+            ApplicationInfo applicationInfo = pm.getApplicationInfo(getPackageName(), 0);
             String appName = (String) pm.getApplicationLabel(applicationInfo);
 
             textTitleApp.setText(appName);
@@ -107,29 +98,6 @@ public class FragmentDialogUpdate extends DialogFragment {
             icon.setImageDrawable(appInfo.loadIcon(pm));
         }
 
-
-        return view;
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        setCancelable(false);
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        if (shouldAnimate) {
-            Dialog dialog = getDialog();
-            if (dialog != null) {
-                int width = ViewGroup.LayoutParams.MATCH_PARENT;
-                int height = ViewGroup.LayoutParams.MATCH_PARENT;
-                dialog.getWindow().setLayout(width, height);
-                dialog.getWindow().setWindowAnimations(R.style.AppTheme_FullScreenDialog);
-            }
-            shouldAnimate = false;
-        }
     }
 
     private void downloadApp(String url) {
@@ -138,7 +106,7 @@ public class FragmentDialogUpdate extends DialogFragment {
         apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "app.apk");
         request.setDestinationUri(Uri.fromFile(apkFile));
 
-        DownloadManager downloadManager = (DownloadManager) requireContext().getSystemService(Context.DOWNLOAD_SERVICE);
+        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
         long downloadId = downloadManager.enqueue(request);
 
         progressBar.setMax(100);
@@ -158,11 +126,16 @@ public class FragmentDialogUpdate extends DialogFragment {
                         int totalBytes = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
                         if (status == DownloadManager.STATUS_SUCCESSFUL) {
                             downloading = false;
+                            isDownload = true;
                             handler.post(() -> {
-                                isDownload = true;
-                                textBtnDown.setText("INSTALAR");
+                                textBtnDown.setText(getString(R.string.text_install));
+                                animationView.setVisibility(View.GONE);
                                 linearButtonUpdate.setVisibility(View.VISIBLE);
                                 linearDown.setVisibility(View.GONE);
+                                textTitleApp.setVisibility(View.VISIBLE);
+                                textSizeApp.setVisibility(View.VISIBLE);
+                                icon.setVisibility(View.VISIBLE);
+                                textDescription.setVisibility(View.VISIBLE);
                             });
                         }
                         int progress = (int) ((downloadedBytes * 100L) / totalBytes);
@@ -179,11 +152,11 @@ public class FragmentDialogUpdate extends DialogFragment {
 
     }
 
-
     private void installApk(File apkFile) {
+       // install(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             Uri contentUri = FileProvider.getUriForFile(
-                    requireContext(),
+                    this,
                     "com.mobsoft.library.provider",
                     apkFile);
 
@@ -199,6 +172,5 @@ public class FragmentDialogUpdate extends DialogFragment {
             startActivity(installIntent);
         }
     }
-
 
 }

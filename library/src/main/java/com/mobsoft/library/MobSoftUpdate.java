@@ -1,15 +1,14 @@
 package com.mobsoft.library;
 
-import android.content.Context;
+import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
-import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.FragmentManager;
 
 import com.google.gson.Gson;
 
@@ -27,50 +26,42 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class MobSoftUpdate {
+class MobSoftUpdate {
 
     private String appId;
+    private Activity activity;
 
-    public interface InitializedProvider<T> {
-        /**
-         * Método chamado quando a verificação de inicialização estiver completa.
-         * @param initialized Indica se o SDK foi inicializado.
-         * @param error Objeto contendo informações sobre um possível erro que ocorreu durante a verificação.
-         */
-        void onInitialized(T initialized, Exception error);
+    public interface OnUpdateResponse {
+        void onFailure(String error);
     }
 
     /**
-     * Verifica se SDK foi inicializado.
-     * @param context O contexto da aplicação.
-     * @param initialized O objeto de retorno que será chamado quando a verificação estiver completa.
-     *                    O método "onInitialized" será chamado com o resultado da verificação.
+     * Define o appId do SDK.
+     *
+     * @param appId o ID do aplicativo
      */
-    public void appIsInitialized(Context context, InitializedProvider<Boolean> initialized) {
-        Bundle metaData = null;
-        try {
-            metaData = context
-                    .getApplicationContext()
-                    .getPackageManager()
-                    .getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA)
-                    .metaData;
-            if (metaData != null) {
-                appId = metaData.getString("com.mobsoft.APP_ID");
-            }
-            initialized.onInitialized(appId != null, null);
-        } catch (Exception e) {
-            initialized.onInitialized(false, e);
-        }
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+
+    /**
+     * Define o contexto do SDK.
+     *
+     * @param activity o contexto do aplicativo
+     */
+    public void setActivity(Activity activity) {
+        this.activity = activity;
     }
 
     /**
      * Exibe o diálogo de verificação de atualizações.
-     * @param manager Gerenciador de fragmentos.
+     * @param onUpdate Gerenciador de fragmentos.
      */
-    public void verifyUpdate(Context context, FragmentManager manager) {
+    public void verifyUpdate(OnUpdateResponse onUpdate) {
         try {
-            PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            PackageInfo pInfo = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0);
             String deviceId = Build.ID;
+
             OkHttpClient client = new OkHttpClient();
 
             HashMap<String, String> data = new HashMap<>();
@@ -91,6 +82,8 @@ public class MobSoftUpdate {
                     .put(requestBody)
                     .build();
 
+            Handler handler = new Handler(Looper.getMainLooper());
+
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(@NonNull Call call, @NonNull IOException e) {
@@ -100,32 +93,49 @@ public class MobSoftUpdate {
                 @Override
                 public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                     assert response.body() != null;
-                    if (response.isSuccessful()) {
-                        String jsonResponse = response.body().string();
-                        JSONObject jsonObject = null;
-                        try {
-
-                            jsonObject = new JSONObject(jsonResponse);
-
-                            DialogFragment dialog = new FragmentDialogUpdate();
-                            Bundle args = new Bundle();
-                            args.putString("url", jsonObject.getString("url"));
-                            args.putString("size", jsonObject.getString("size"));
-                            dialog.setArguments(args);
-                            dialog.show(manager, "new_update");
-
-                        } catch (JSONException e) {
-                            throw new RuntimeException(e);
-                        }
-                    } else {
-                        System.out.println("Response not successful " + response.body().string());
+                    String jsonResponse = response.body().string();
+                    JSONObject jsonObject;
+                    try {
+                        jsonObject = new JSONObject(jsonResponse);
+                    } catch (JSONException e) {
+                        handler.post(() -> onUpdate.onFailure("Error verifying request. Please try again later or contact support."));
+                        return;
                     }
+
+                    try {
+
+                        if (response.isSuccessful()) {
+                            Intent i = new Intent();
+                            i.setClass(activity, UpdateActivity.class);
+                            i.putExtra("size", jsonObject.getString("size"));
+                            i.putExtra("url", jsonObject.getString("url"));
+                            activity.startActivity(i);
+                            activity.finish();
+                        } else {
+                            Intent i = new Intent();
+                            i.setClass(activity, UpdateActivity.class);
+                            i.putExtra("size", jsonObject.getString("size"));
+                            i.putExtra("url", jsonObject.getString("url"));
+                            activity.startActivity(i);
+                            activity.finish();
+                            String message = jsonObject.getString("message");
+                            handler.post(() -> onUpdate.onFailure(message));
+                        }
+
+                    } catch (JSONException e) {
+                        String message = "Error verifying request, please contact support";
+                        handler.post(() -> onUpdate.onFailure(message));
+                    }
+
+
                 }
             });
 
-        } catch (Exception e) {
-            Log.d("Error", String.valueOf(e));
+        } catch (PackageManager.NameNotFoundException e) {
+            onUpdate.onFailure(e.getMessage());
         }
     }
+
+
 
 }
