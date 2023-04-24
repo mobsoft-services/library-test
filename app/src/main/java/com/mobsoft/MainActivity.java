@@ -14,20 +14,15 @@ public class MainActivity extends AppCompatActivity  {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        MobSoftSdk mobSoftSdk = new MobSoftSdk();
-        mobSoftSdk.setAppId("b712d6fd-b936-417e-846e-7f095cee3d6d");
-        mobSoftSdk.setActivity(MainActivity.this);
-        mobSoftSdk.setFragmentManager(getSupportFragmentManager());
-
-        mobSoftSdk.onInitialized(new MobSoftSdk.InitializedSdk() {
+        new MobSoftSdk("b712d6fd-b936-417e-846e-7f095cee3d6d", this, new MobSoftSdk.InitializedSdk() {
             @Override
             public void onSuccess(String message) {
-
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onFailure(String error) {
-                // Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
             }
         });
 

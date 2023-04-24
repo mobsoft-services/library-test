@@ -24,6 +24,7 @@ import androidx.core.content.FileProvider;
 import com.airbnb.lottie.LottieAnimationView;
 
 import java.io.File;
+import java.util.UUID;
 
 public class UpdateActivity extends AppCompatActivity {
 
@@ -103,7 +104,8 @@ public class UpdateActivity extends AppCompatActivity {
     private void downloadApp(String url) {
 
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-        apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "app.apk");
+        String uuid = UUID.randomUUID().toString();
+        apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), uuid + ".apk");
         request.setDestinationUri(Uri.fromFile(apkFile));
 
         DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
@@ -157,7 +159,7 @@ public class UpdateActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             Uri contentUri = FileProvider.getUriForFile(
                     this,
-                    "com.mobsoft.library.provider",
+                    getPackageName() + ".provider",
                     apkFile);
 
             Intent installIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);

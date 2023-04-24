@@ -21,10 +21,6 @@
             </intent-filter>
         </activity>
 
-        <meta-data
-            android:name="com.mobsoft.APP_ID"
-            android:value="b712d6fd-b936-417e-846e-7f095cee3d6d" />
-
     </application>
 
 </manifest>
