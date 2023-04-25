@@ -1,25 +1,36 @@
 package com.mobsoft.library;
 
+import android.app.Dialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowInsetsController;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.DialogFragment;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieDrawable;
@@ -27,7 +38,7 @@ import com.airbnb.lottie.LottieDrawable;
 import java.io.File;
 import java.util.UUID;
 
-public class UpdateActivity extends AppCompatActivity {
+public class UpdateFragment extends DialogFragment {
 
     private ProgressBar progressBar;
     private TextView textProgress;
@@ -43,31 +54,52 @@ public class UpdateActivity extends AppCompatActivity {
     private TextView textDescription;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_update);
+       // setStyle(DialogFragment.STYLE_NORMAL, android.R.style.Theme_Material_Light_NoActionBar_Fullscreen);
 
-        linearDown = findViewById(R.id.linear_progress_download);
-        textProgress = findViewById(R.id.textDownloadProgress);
-        progressBar = findViewById(R.id.progressbar1);
-        linearButtonUpdate = findViewById(R.id.linear_button_update);
-        textBtnDown = findViewById(R.id.textBtnDown);
-        icon = findViewById(R.id.icon);
-        textTitleApp = findViewById(R.id.text_title_app);
-        textSizeApp = findViewById(R.id.text_size_app);
-        textDescription = findViewById(R.id.textDescription);
+    }
+
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        Dialog dialog = new Dialog(requireContext(), R.style.DialogSlideUpAnimation);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Window window = dialog.getWindow();
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            window.setStatusBarColor(Color.WHITE);
+        }
+
+        return dialog;
+    }
 
 
-        animationView = findViewById(R.id.animationView);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.activity_update, container, false);
+
+        linearDown = view.findViewById(R.id.linear_progress_download);
+        textProgress = view.findViewById(R.id.textDownloadProgress);
+        progressBar = view.findViewById(R.id.progressbar1);
+        linearButtonUpdate = view.findViewById(R.id.linear_button_update);
+        textBtnDown = view.findViewById(R.id.textBtnDown);
+        icon = view.findViewById(R.id.icon);
+        textTitleApp = view.findViewById(R.id.text_title_app);
+        textSizeApp = view.findViewById(R.id.text_size_app);
+        textDescription = view.findViewById(R.id.textDescription);
+
+
+        animationView = view.findViewById(R.id.animationView);
         animationView.setAnimation(R.raw.renewable_energy);
         animationView.setRepeatMode(LottieDrawable.RESTART);
         animationView.loop(true);
         animationView.playAnimation();
 
-        Intent args = getIntent();
+        Bundle args = getArguments();
 
         if (args != null) {
-            textSizeApp.setText(getString(R.string.text_length).concat(" " + args.getStringExtra("size")));
+            textSizeApp.setText(getString(R.string.text_length).concat(" " + args.getString("size")));
         }
 
         textBtnDown.setOnClickListener(view1 -> {
@@ -81,17 +113,17 @@ public class UpdateActivity extends AppCompatActivity {
                 textSizeApp.setVisibility(View.GONE);
                 icon.setVisibility(View.GONE);
                 textDescription.setVisibility(View.GONE);
-                downloadApp(args.getStringExtra("url"));
+                downloadApp(args.getString("url"));
             }
         });
 
-        PackageManager pm = getPackageManager();
+        PackageManager pm = requireContext().getPackageManager();
         ApplicationInfo appInfo = null;
 
         try {
-            appInfo = pm.getApplicationInfo(getPackageName(), 0);
+            appInfo = pm.getApplicationInfo(requireContext().getPackageName(), 0);
 
-            ApplicationInfo applicationInfo = pm.getApplicationInfo(getPackageName(), 0);
+            ApplicationInfo applicationInfo = pm.getApplicationInfo(requireContext().getPackageName(), 0);
             String appName = (String) pm.getApplicationLabel(applicationInfo);
 
             textTitleApp.setText(appName);
@@ -102,16 +134,17 @@ public class UpdateActivity extends AppCompatActivity {
             icon.setImageDrawable(appInfo.loadIcon(pm));
         }
 
+        return view;
     }
 
     private void downloadApp(String url) {
 
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse("https://firebasestorage.googleapis.com/v0/b/mobsoft-services.appspot.com/o/APK%2Ftedte-6b571faf-6603-4d54-a4dc-290977d5a2ff.apk?alt=media&token=37020197-14b0-4564-a3e0-4b53afe1f0c2"));
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
         String uuid = UUID.randomUUID().toString();
         apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), uuid + ".apk");
         request.setDestinationUri(Uri.fromFile(apkFile));
 
-        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        DownloadManager downloadManager = (DownloadManager) requireContext().getSystemService(Context.DOWNLOAD_SERVICE);
         long downloadId = downloadManager.enqueue(request);
 
         progressBar.setMax(100);
@@ -158,11 +191,11 @@ public class UpdateActivity extends AppCompatActivity {
     }
 
     private void installApk(File apkFile) {
-       // install(this);
+        // install(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             Uri contentUri = FileProvider.getUriForFile(
-                    this,
-                    getPackageName() + ".provider",
+                    requireContext(),
+                    requireContext().getPackageName() + ".provider",
                     apkFile);
 
             Intent installIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);

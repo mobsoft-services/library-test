@@ -15,11 +15,12 @@ public class MobSoftSdk {
         void onFailure(String error);
     }
 
-    public MobSoftSdk(@NonNull String appId, @NonNull Activity activity, InitializedSdk sdk) {
+    public MobSoftSdk(@NonNull String appId, @NonNull Activity activity, @NonNull FragmentManager fragment, InitializedSdk sdk) {
         sdk.onSuccess("SDK initialized successfully.");
         MobSoftUpdate update = new MobSoftUpdate();
         update.setAppId(appId);
         update.setActivity(activity);
+        update.setFragment(fragment);
         update.verifyUpdate(sdk::onFailure);
     }
 

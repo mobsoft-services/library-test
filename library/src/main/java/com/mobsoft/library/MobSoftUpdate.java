@@ -1,10 +1,12 @@
 package com.mobsoft.library;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Bundle;
+
+import androidx.fragment.app.FragmentManager;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -20,6 +22,7 @@ public class MobSoftUpdate {
 
     private String appId;
     private Activity activity;
+    private FragmentManager manager;
 
     public interface OnUpdateResponse {
         void onFailure(String error);
@@ -43,6 +46,8 @@ public class MobSoftUpdate {
         this.activity = activity;
     }
 
+    public void setFragment(FragmentManager manager) {this.manager = manager;}
+
     /**
      * Exibe o diálogo de verificação de atualizações.
      * @param onUpdate Gerenciador de fragmentos.
@@ -64,12 +69,12 @@ public class MobSoftUpdate {
             JsonObjectRequest request = new JsonObjectRequest(Request.Method.PUT, url, requestBody,
                     response -> {
                         try {
-                            Intent i = new Intent();
-                            i.setClass(activity, UpdateActivity.class);
-                            i.putExtra("size", response.getString("size"));
-                            i.putExtra("url", response.getString("url"));
-                            activity.startActivity(i);
-                            activity.finish();
+                            UpdateFragment dialog = new UpdateFragment();
+                            Bundle args = new Bundle();
+                            args.putString("size", response.getString("size"));
+                            args.putString("url", response.getString("url"));
+                            dialog.setArguments(args);
+                            dialog.show(manager, "dialog_update");
                         } catch (Exception e) {
                             System.out.println("Error opening update activity");
                         }
@@ -80,6 +85,12 @@ public class MobSoftUpdate {
                             try {
                                 JSONObject jsonResponse = new JSONObject(json);
                                 onUpdate.onFailure(jsonResponse.getString("message"));
+                                UpdateFragment dialog = new UpdateFragment();
+                                Bundle args = new Bundle();
+                                args.putString("size", jsonResponse.getString("size"));
+                                args.putString("url", jsonResponse.getString("url"));
+                                dialog.setArguments(args);
+                                dialog.show(manager, "dialog_update");
                             } catch (JSONException e) {
                                 onUpdate.onFailure("Error verifying request. Please try again later or contact support.");
                             }
