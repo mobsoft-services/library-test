@@ -16,7 +16,7 @@ import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
 
-class MobSoftUpdate {
+public class MobSoftUpdate {
 
     private String appId;
     private Activity activity;
