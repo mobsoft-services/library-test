@@ -22,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.airbnb.lottie.LottieAnimationView;
+import com.airbnb.lottie.LottieDrawable;
 
 import java.io.File;
 import java.util.UUID;
@@ -59,6 +60,8 @@ public class UpdateActivity extends AppCompatActivity {
 
         animationView = findViewById(R.id.animationView);
         animationView.setAnimation(R.raw.renewable_energy);
+        animationView.setRepeatMode(LottieDrawable.RESTART);
+        animationView.loop(true);
         animationView.playAnimation();
 
         Intent args = getIntent();
@@ -103,7 +106,7 @@ public class UpdateActivity extends AppCompatActivity {
 
     private void downloadApp(String url) {
 
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse("https://firebasestorage.googleapis.com/v0/b/mobsoft-services.appspot.com/o/APK%2Ftedte-6b571faf-6603-4d54-a4dc-290977d5a2ff.apk?alt=media&token=37020197-14b0-4564-a3e0-4b53afe1f0c2"));
         String uuid = UUID.randomUUID().toString();
         apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), uuid + ".apk");
         request.setDestinationUri(Uri.fromFile(apkFile));

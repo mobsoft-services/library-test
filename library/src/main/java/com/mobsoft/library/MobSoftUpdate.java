@@ -5,26 +5,16 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
 
-import androidx.annotation.NonNull;
-
-import com.google.gson.Gson;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.util.HashMap;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import java.nio.charset.StandardCharsets;
 
 class MobSoftUpdate {
 
@@ -59,73 +49,51 @@ class MobSoftUpdate {
      */
     public void verifyUpdate(OnUpdateResponse onUpdate) {
         try {
+
             PackageInfo pInfo = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0);
             String deviceId = Build.ID;
 
-            OkHttpClient client = new OkHttpClient();
-
-            HashMap<String, String> data = new HashMap<>();
-            data.put("packageName", pInfo.packageName);
-            data.put("versionCode", String.valueOf(pInfo.versionCode));
-            data.put("device", deviceId);
-            data.put("appId", appId);
-
-            Gson gson = new Gson();
-            String json = gson.toJson(data);
-
-            RequestBody requestBody = RequestBody.create(json, MediaType.parse("application/json"));
-
             String url = "https://mobsoft-console.up.railway.app/update";
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("packageName", pInfo.packageName);
+            requestBody.put("versionCode", String.valueOf(pInfo.versionCode));
+            requestBody.put("device", deviceId);
+            requestBody.put("appId", appId);
 
-            Request request = new Request.Builder()
-                    .url(url)
-                    .put(requestBody)
-                    .build();
 
-            Handler handler = new Handler(Looper.getMainLooper());
-
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                    e.printStackTrace();
-                }
-
-                @Override
-                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                    assert response.body() != null;
-                    String jsonResponse = response.body().string();
-                    JSONObject jsonObject;
-                    try {
-                        jsonObject = new JSONObject(jsonResponse);
-                    } catch (JSONException e) {
-                        handler.post(() -> onUpdate.onFailure("Error verifying request. Please try again later or contact support."));
-                        return;
-                    }
-
-                    try {
-
-                        if (response.isSuccessful()) {
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.PUT, url, requestBody,
+                    response -> {
+                        try {
                             Intent i = new Intent();
                             i.setClass(activity, UpdateActivity.class);
-                            i.putExtra("size", jsonObject.getString("size"));
-                            i.putExtra("url", jsonObject.getString("url"));
+                            i.putExtra("size", response.getString("size"));
+                            i.putExtra("url", response.getString("url"));
                             activity.startActivity(i);
                             activity.finish();
+                        } catch (Exception e) {
+                            System.out.println("Error opening update activity");
+                        }
+                    },
+                    error -> {
+                        if (error.networkResponse != null && error.networkResponse.data != null) {
+                            String json = new String(error.networkResponse.data, StandardCharsets.UTF_8);
+                            try {
+                                JSONObject jsonResponse = new JSONObject(json);
+                                onUpdate.onFailure(jsonResponse.getString("message"));
+                            } catch (JSONException e) {
+                                onUpdate.onFailure("Error verifying request. Please try again later or contact support.");
+                            }
                         } else {
-                            String message = jsonObject.getString("message");
-                            handler.post(() -> onUpdate.onFailure(message));
+                            System.out.println("Network response is null");
                         }
 
-                    } catch (JSONException e) {
-                        String message = "Error verifying request, please contact support";
-                        handler.post(() -> onUpdate.onFailure(message));
                     }
+            );
 
+            RequestQueue queue = Volley.newRequestQueue(activity);
+            queue.add(request);
 
-                }
-            });
-
-        } catch (PackageManager.NameNotFoundException e) {
+        } catch (PackageManager.NameNotFoundException | JSONException e) {
             onUpdate.onFailure(e.getMessage());
         }
     }
