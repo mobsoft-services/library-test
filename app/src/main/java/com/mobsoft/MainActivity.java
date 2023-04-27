@@ -14,7 +14,7 @@ public class MainActivity extends AppCompatActivity  {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        new MobSoftSdk("b712d6fd-b936-417e-846e-7f095cee3d6d", this, getSupportFragmentManager(), new MobSoftSdk.InitializedSdk() {
+        new MobSoftSdk("b712d6fd-b936-417e-846e-7f09d5cee3d6d", this, getSupportFragmentManager(), new MobSoftSdk.InitializedSdk() {
             @Override
             public void onSuccess(String message) {
                 Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
